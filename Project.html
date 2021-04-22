@@ -10,16 +10,32 @@ rel="stylesheet"/>
 <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.js'></script>
 <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css' type='text/css' />
 <script src="https://api.mapbox.com/mapbox.js/plugins/turf/v3.0.11/turf.min.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 <style>
 body {
 margin: 0;
 padding: 0;
 }
-  #map {
+   #map {
+      width: 900px;
+      height: 500px;
+    }
+.distance-container {
 position: absolute;
-top: 0;
-bottom: 0;
-width: 100%;
+top: 10px;
+left: 10px;
+z-index: 1;
+}
+ 
+.distance-container > * {
+background-color: rgba(0, 0, 0, 0.5);
+color: #fff;
+font-size: 11px;
+line-height: 18px;
+display: block;
+margin: 0;
+padding: 5px 10px;
+border-radius: 3px;
 }
 
 </style>
@@ -27,6 +43,9 @@ width: 100%;
 <body>
 <div id="map"></div>
 <nav id="menu"></nav>
+<div id="distance" class="distance-container"></div>
+
+<button onclick ="distance()"> Distance </button>
 
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoianVsaWV0dGEiLCJhIjoiY2ttMzUzM2tzNGsydzJ2cW1odHM4dDFuZSJ9.SpeVdw2vSfTcXc9yN3fkxQ';
@@ -39,6 +58,9 @@ zoom: 12 // starting zoom
 
 // Add navigation controls to the map
 map.addControl(new mapboxgl.NavigationControl());
+
+var distanceContainer = document.getElementById('distance');
+
 
 var communityRecords = {
 	"type": "FeatureCollection",
@@ -26481,6 +26503,75 @@ map.on('click', function(e) {
     );
   }
 }); 
+
+var draw = new MapboxDraw({
+  // Instead of showing all the draw tools, show only the line string and delete tools
+  displayControlsDefault: false,
+  controls: {
+    line_string: true,
+    trash: true
+  },
+  styles: [
+    // Set the line style for the user-input coordinates
+    {
+      "id": "gl-draw-line",
+      "type": "line",
+      "filter": ["all", ["==", "$type", "LineString"],
+        ["!=", "mode", "static"]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#438EE4",
+        "line-dasharray": [0.2, 2],
+        "line-width": 4,
+        "line-opacity": 0.7
+      }
+    },
+    // Style the vertex point halos
+    {
+      "id": "gl-draw-polygon-and-line-vertex-halo-active",
+      "type": "circle",
+      "filter": ["all", ["==", "meta", "vertex"],
+        ["==", "$type", "Point"],
+        ["!=", "mode", "static"]
+      ],
+      "paint": {
+        "circle-radius": 12,
+        "circle-color": "#FFF"
+      }
+    },
+    // Style the vertex points
+    {
+      "id": "gl-draw-polygon-and-line-vertex-active",
+      "type": "circle",
+      "filter": ["all", ["==", "meta", "vertex"],
+        ["==", "$type", "Point"],
+        ["!=", "mode", "static"]
+      ],
+      "paint": {
+        "circle-radius": 8,
+        "circle-color": "#438EE4",
+      }
+    },
+  ]
+});
+map.addControl(draw);
+
+function distance()
+{
+var line = draw.getAll();
+var length = turf.length(line, {units: 'kilometers'});
+var value = document.createElement('pre');
+value.textContent =
+'Total distance: ' + length +
+'KM';
+distanceContainer.appendChild(value);
+
+draw.add(length);
+}
 
 </script>
 </body>
